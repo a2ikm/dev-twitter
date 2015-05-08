@@ -1,0 +1,8 @@
+*.ko
+*.o
+*.ko.unsigned
+*.mod.c
+.*
+!.gitignore
+Module.symvers
+modules.order
