@@ -16,6 +16,30 @@
 static dev_t twitter_dev_t;
 static struct cdev twitter_cdev;
 
+struct socket* ktcp_sock_connect(const char* ip_addr, unsigned int port)
+{
+  struct socket* sock;
+  struct sockaddr_in* server;
+  int ret;
+
+  server = (struct sockaddr_in*)kmalloc(sizeof(struct sockaddr_in), GFP_KERNEL);
+  sock_create(PF_INET, SOCK_STREAM, IPPROTO_TCP, &sock);
+  server->sin_family = AF_INET;
+  server->sin_addr.s_addr = in_aton(ip_addr);
+  server->sin_port = htons(port);
+
+  printk(KERN_INFO "Connect to %X:%u\n", server->sin_addr.s_addr, server->sin_port);
+
+  ret = kernel_connect(sock, (struct sockaddr*)server, sizeof(struct sockaddr_in), !O_NONBLOCK);
+  if (ret < 0) {
+    printk(KERN_WARNING "Error %d\n", -ret);
+    return NULL;
+  }
+
+  printk(KERN_INFO "Connected\n");
+  return sock;
+}
+
 int ktcp_send(struct socket* sock, char* buf, int len)
 {
   printk(KERN_INFO "ktcp_send");
@@ -94,25 +118,11 @@ static int twitter_release(struct inode* inode, struct file* fp)
 
 static ssize_t twitter_read(struct file* fp, char* buf, size_t count, loff_t* offset)
 {
-  struct socket* sock;
-  struct sockaddr_in* server;
+  struct socket *sock;
   char b[1024];
   int ret;
 
-  server = (struct sockaddr_in*)kmalloc(sizeof(struct sockaddr_in), GFP_KERNEL);
-  sock_create(PF_INET, SOCK_STREAM, IPPROTO_TCP, &sock);
-  server->sin_family = AF_INET;
-  server->sin_addr.s_addr = in_aton("127.0.0.1");
-  server->sin_port = htons(8000);
-  printk(KERN_INFO "Connect to %X:%u\n", server->sin_addr.s_addr, server->sin_port);
-
-  ret = kernel_connect(sock, (struct sockaddr*)server, sizeof(struct sockaddr_in), !O_NONBLOCK);
-  if (ret < 0) {
-    printk(KERN_WARNING "Error %d\n", -ret);
-    return -ret;
-  }
-
-  printk(KERN_INFO "Connected\n");
+  sock = ktcp_sock_connect("127.0.0.1", 8000);
 
   memset(b, 0, sizeof(b));
   snprintf(b, sizeof(b), "GET / HTTP/1.1\r\n\r\n");
