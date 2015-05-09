@@ -6,12 +6,81 @@
 #include <linux/in.h>
 #include <linux/net.h>
 #include <linux/slab.h>
+#include <linux/fs.h>
+#include <linux/uio.h>
+#include <asm/uaccess.h>
 
 #define MODNAME "twitter"
 #define MINOR_COUNT 1
 
 static dev_t twitter_dev_t;
 static struct cdev twitter_cdev;
+
+int ktcp_send(struct socket* sock, char* buf, int len)
+{
+  printk(KERN_INFO "ktcp_send");
+
+  struct iovec iov;
+  struct msghdr msg;
+  int size;
+  mm_segment_t oldfs;
+
+  iov.iov_base = buf;
+  iov.iov_len = len;
+
+  msg.msg_name = 0;
+  msg.msg_namelen = 0;
+  msg.msg_iov = &iov;
+  msg.msg_iovlen = 1;
+  msg.msg_control = NULL;
+  msg.msg_controllen = 0;
+  msg.msg_flags = 0;
+
+  oldfs = get_fs(); set_fs(KERNEL_DS);
+  size = sock_sendmsg(sock, &msg, strlen(buf));
+  set_fs(oldfs);
+
+  if (size < 0) {
+    printk(KERN_WARNING "sock_sendmsg failed : %d", -size);
+  }
+
+  return size;
+}
+
+int ktcp_recv(struct socket* sock, char* buf, int len)
+{
+  printk(KERN_INFO "ktcp_recv");
+
+  struct iovec iov;
+  struct msghdr msg;
+  mm_segment_t oldfs;
+  int size;
+
+  if (sock->sk == NULL) return 0;
+
+  iov.iov_base = buf;
+  iov.iov_len = len;
+
+  msg.msg_name = 0;
+  msg.msg_namelen = 0;
+  msg.msg_iov = &iov;
+  msg.msg_iovlen = 1;
+  msg.msg_control = NULL;
+  msg.msg_controllen = 0;
+  msg.msg_flags = 0;
+
+  oldfs = get_fs(); set_fs(KERNEL_DS);
+  size = sock_recvmsg(sock, &msg, len, msg.msg_flags);
+  set_fs(oldfs);
+
+  if (size < 0) {
+    printk(KERN_WARNING "sock_recvmsg failed : %d", -size);
+  } else {
+    printk(KERN_INFO "sock_recvmsg succeed : %d", size);
+  }
+
+  return size;
+}
 
 static int twitter_open(struct inode* inode, struct file* fp)
 {
@@ -27,6 +96,7 @@ static ssize_t twitter_read(struct file* fp, char* buf, size_t count, loff_t* of
 {
   struct socket* sock;
   struct sockaddr_in* server;
+  char b[1024];
   int ret;
 
   server = (struct sockaddr_in*)kmalloc(sizeof(struct sockaddr_in), GFP_KERNEL);
@@ -36,17 +106,26 @@ static ssize_t twitter_read(struct file* fp, char* buf, size_t count, loff_t* of
   server->sin_port = htons(8000);
   printk(KERN_INFO "Connect to %X:%u\n", server->sin_addr.s_addr, server->sin_port);
 
-  ret = sock->ops->connect(sock, (struct sockaddr*)server, sizeof(struct sockaddr_in), !O_NONBLOCK);
+  ret = kernel_connect(sock, (struct sockaddr*)server, sizeof(struct sockaddr_in), !O_NONBLOCK);
   if (ret < 0) {
     printk(KERN_WARNING "Error %d\n", -ret);
     return -ret;
   }
 
   printk(KERN_INFO "Connected\n");
+
+  memset(b, 0, sizeof(b));
+  snprintf(b, sizeof(b), "GET / HTTP/1.1\r\n\r\n");
+  ktcp_send(sock, b, strlen(b));
+
+  memset(b, 0, sizeof(b));
+  ktcp_recv(sock, b, sizeof(b));
+  printk(KERN_INFO "received: %s\n", b);
+
   sock_release(sock);
 
-  buf = "";
-  return 0;
+  strcpy(buf, &b);
+  return strlen(b);
 }
 
 static ssize_t twitter_write(struct file* fp, const char* buf, size_t count, loff_t* offset)
