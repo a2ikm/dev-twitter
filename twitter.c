@@ -15,6 +15,7 @@
 
 static dev_t twitter_dev_t;
 static struct cdev twitter_cdev;
+static struct socket* twitter_sock;
 
 struct socket* ktcp_sock_connect(const char* ip_addr, unsigned int port)
 {
@@ -108,31 +109,33 @@ int ktcp_recv(struct socket* sock, char* buf, int len)
 
 static int twitter_open(struct inode* inode, struct file* fp)
 {
+  twitter_sock = ktcp_sock_connect("127.0.0.1", 8000);
+  if (twitter_sock == NULL) {
+    return -1;
+  }
+
   return 0;
 }
 
 static int twitter_release(struct inode* inode, struct file* fp)
 {
+  sock_release(twitter_sock);
+
   return 0;
 }
 
 static ssize_t twitter_read(struct file* fp, char* buf, size_t count, loff_t* offset)
 {
-  struct socket *sock;
   char b[1024];
   int ret;
 
-  sock = ktcp_sock_connect("127.0.0.1", 8000);
-
   memset(b, 0, sizeof(b));
   snprintf(b, sizeof(b), "GET / HTTP/1.1\r\n\r\n");
-  ktcp_send(sock, b, strlen(b));
+  ktcp_send(twitter_sock, b, strlen(b));
 
   memset(b, 0, sizeof(b));
-  ktcp_recv(sock, b, sizeof(b));
+  ktcp_recv(twitter_sock, b, sizeof(b));
   printk(KERN_INFO "received: %s\n", b);
-
-  sock_release(sock);
 
   strcpy(buf, &b);
   return strlen(b);
