@@ -2,6 +2,10 @@
 #include <linux/kernel.h>
 #include <linux/fs.h>
 #include <linux/cdev.h>
+#include <linux/socket.h>
+#include <linux/in.h>
+#include <linux/net.h>
+#include <linux/slab.h>
 
 #define MODNAME "twitter"
 #define MINOR_COUNT 1
@@ -21,6 +25,26 @@ static int twitter_release(struct inode* inode, struct file* fp)
 
 static ssize_t twitter_read(struct file* fp, char* buf, size_t count, loff_t* offset)
 {
+  struct socket* sock;
+  struct sockaddr_in* server;
+  int ret;
+
+  server = (struct sockaddr_in*)kmalloc(sizeof(struct sockaddr_in), GFP_KERNEL);
+  sock_create(PF_INET, SOCK_STREAM, IPPROTO_TCP, &sock);
+  server->sin_family = AF_INET;
+  server->sin_addr.s_addr = in_aton("127.0.0.1");
+  server->sin_port = htons(8000);
+  printk(KERN_INFO "Connect to %X:%u\n", server->sin_addr.s_addr, server->sin_port);
+
+  ret = sock->ops->connect(sock, (struct sockaddr*)server, sizeof(struct sockaddr_in), !O_NONBLOCK);
+  if (ret < 0) {
+    printk(KERN_WARNING "Error %d\n", -ret);
+    return -ret;
+  }
+
+  printk(KERN_INFO "Connected\n");
+  sock_release(sock);
+
   buf = "";
   return 0;
 }
