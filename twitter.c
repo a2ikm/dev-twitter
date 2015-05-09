@@ -9,23 +9,23 @@
 static dev_t twitter_dev_t;
 static struct cdev twitter_cdev;
 
-static int twitter_open(struct inode *inode, struct file *fp)
+static int twitter_open(struct inode* inode, struct file* fp)
 {
   return 0;
 }
 
-static int twitter_release(struct inode *inode, struct file *fp)
+static int twitter_release(struct inode* inode, struct file* fp)
 {
   return 0;
 }
 
-static ssize_t twitter_read(struct file *fp, char *buf, size_t count, loff_t *offset)
+static ssize_t twitter_read(struct file* fp, char* buf, size_t count, loff_t* offset)
 {
   buf = "";
   return 0;
 }
 
-static ssize_t twitter_write(struct file *fp, const char *buf, size_t count, loff_t *offset)
+static ssize_t twitter_write(struct file* fp, const char* buf, size_t count, loff_t* offset)
 {
   return 0;
 }
