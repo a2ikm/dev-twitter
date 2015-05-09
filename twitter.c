@@ -107,7 +107,7 @@ int ktcp_recv(struct socket* sock, char* buf, int len)
   return size;
 }
 
-static int twitter_open(struct inode* inode, struct file* fp)
+static int twitter_open(struct inode* inode, struct file* filp)
 {
   twitter_sock = ktcp_sock_connect("127.0.0.1", 8000);
   if (twitter_sock == NULL) {
@@ -117,17 +117,16 @@ static int twitter_open(struct inode* inode, struct file* fp)
   return 0;
 }
 
-static int twitter_release(struct inode* inode, struct file* fp)
+static int twitter_release(struct inode* inode, struct file* filp)
 {
   sock_release(twitter_sock);
 
   return 0;
 }
 
-static ssize_t twitter_read(struct file* fp, char* buf, size_t count, loff_t* offset)
+static ssize_t twitter_read(struct file* filp, char* buf, size_t buflen, loff_t* offset)
 {
   char b[1024];
-  int ret;
 
   memset(b, 0, sizeof(b));
   snprintf(b, sizeof(b), "GET / HTTP/1.1\r\n\r\n");
@@ -141,7 +140,7 @@ static ssize_t twitter_read(struct file* fp, char* buf, size_t count, loff_t* of
   return strlen(b);
 }
 
-static ssize_t twitter_write(struct file* fp, const char* buf, size_t count, loff_t* offset)
+static ssize_t twitter_write(struct file* filp, const char* buf, size_t buflen, loff_t* offset)
 {
   return 0;
 }
