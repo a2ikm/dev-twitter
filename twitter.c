@@ -63,7 +63,7 @@ int ktcp_send(struct socket* sock, char* buf, int len)
   msg.msg_flags = 0;
 
   oldfs = get_fs(); set_fs(KERNEL_DS);
-  size = sock_sendmsg(sock, &msg, strlen(buf));
+  size = sock_sendmsg(sock, &msg, len);
   set_fs(oldfs);
 
   if (size < 0) {
