@@ -73,6 +73,8 @@ int ktcp_send(struct socket* sock, char* buf, int len)
 
   if (size < 0) {
     printk(KERN_WARNING "sock_sendmsg failed : %d", -size);
+  } else {
+    printk(KERN_INFO "sock_sendmsg succeed : %d", size);
   }
 
   return size;
