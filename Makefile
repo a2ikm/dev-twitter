@@ -18,6 +18,8 @@ uninstall:
 	/sbin/rmmod ${MODNAME}
 	rm -f /dev/${MODNAME}
 
+reinstall: all uninstall install
+
 obj-m:= twitter.o
 
 clean-files := *.o *.ko *.mod.[co] *~
