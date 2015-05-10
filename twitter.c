@@ -44,12 +44,12 @@ struct socket* ktcp_sock_connect(const char* ip_addr, unsigned int port)
 
 int ktcp_send(struct socket* sock, char* buf, int len)
 {
-  printk(KERN_INFO "ktcp_send");
-
   struct iovec iov;
   struct msghdr msg;
   int size;
   mm_segment_t oldfs;
+
+  printk(KERN_INFO "ktcp_send");
 
   iov.iov_base = buf;
   iov.iov_len = len;
@@ -75,12 +75,12 @@ int ktcp_send(struct socket* sock, char* buf, int len)
 
 int ktcp_recv(struct socket* sock, char* buf, int len)
 {
-  printk(KERN_INFO "ktcp_recv");
-
   struct iovec iov;
   struct msghdr msg;
   mm_segment_t oldfs;
   int size;
+
+  printk(KERN_INFO "ktcp_recv");
 
   if (sock->sk == NULL) return 0;
 
