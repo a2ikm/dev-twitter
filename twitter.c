@@ -4,6 +4,7 @@
 #include <linux/cdev.h>
 #include <linux/socket.h>
 #include <linux/in.h>
+#include <linux/inet.h>
 #include <linux/net.h>
 #include <linux/slab.h>
 #include <linux/fs.h>
