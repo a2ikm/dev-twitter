@@ -157,7 +157,7 @@ static ssize_t twitter_read(struct file* filp, char* buf, size_t buflen, loff_t*
 
 static ssize_t twitter_write(struct file* filp, const char* buf, size_t buflen, loff_t* offset)
 {
-  return 0;
+  return buflen;
 }
 
 static struct file_operations twitter_fops = {
