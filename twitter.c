@@ -127,17 +127,21 @@ static int twitter_release(struct inode* inode, struct file* filp)
 static ssize_t twitter_read(struct file* filp, char* buf, size_t buflen, loff_t* offset)
 {
   char b[1024];
+  int len;
 
-  memset(b, 0, sizeof(b));
-  snprintf(b, sizeof(b), "GET / HTTP/1.1\r\n\r\n");
-  ktcp_send(twitter_sock, b, strlen(b));
+  if (*offset == 0) {
+    memset(b, 0, sizeof(b));
+    snprintf(b, sizeof(b), "GET / HTTP/1.1\r\n\r\n");
+    ktcp_send(twitter_sock, b, strlen(b));
+  }
 
-  memset(b, 0, sizeof(b));
-  ktcp_recv(twitter_sock, b, sizeof(b));
-  printk(KERN_INFO "received: %s\n", b);
+  len = ktcp_recv(twitter_sock, buf, buflen);
+  if (len < 0) {
+    return 0;
+  }
 
-  strcpy(buf, &b);
-  return strlen(b);
+  *offset += len;
+  return len;
 }
 
 static ssize_t twitter_write(struct file* filp, const char* buf, size_t buflen, loff_t* offset)
