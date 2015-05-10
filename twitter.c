@@ -51,6 +51,11 @@ int ktcp_send(struct socket* sock, char* buf, int len)
 
   printk(KERN_INFO "ktcp_send");
 
+  if (sock == NULL) {
+    printk(KERN_WARNING "sock is NULL");
+    return -1;
+  }
+
   iov.iov_base = buf;
   iov.iov_len = len;
 
@@ -82,7 +87,10 @@ int ktcp_recv(struct socket* sock, char* buf, int len)
 
   printk(KERN_INFO "ktcp_recv");
 
-  if (sock->sk == NULL) return 0;
+  if (sock == NULL) {
+    printk(KERN_WARNING "sock is NULL");
+    return -1;
+  }
 
   iov.iov_base = buf;
   iov.iov_len = len;
